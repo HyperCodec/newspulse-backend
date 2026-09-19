@@ -1,0 +1,55 @@
+use surrealdb::{Surreal, engine::remote::ws::{Client, Wss}, opt::auth::{Database, Root}};
+use tracing::info;
+use tracing_subscriber::EnvFilter;
+
+mod server;
+mod db;
+
+#[derive(Clone)]
+struct AppState {
+    db: Surreal<Client>,
+}
+
+fn get_env(name: &str) -> String {
+    std::env::var(name).expect(&format!("Missing environment variable: {name}"))
+}
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    dotenvy::dotenv().ok();
+
+    tracing_subscriber::fmt()
+        .with_env_filter(
+            EnvFilter::try_from_default_env()
+                .unwrap_or_else(|_| EnvFilter::from("INFO"))
+        )
+        .init();
+
+    let surreal_uri = get_env("SURREAL_URI");
+    let surreal_user = get_env("SURREAL_USER");
+    let surreal_pass = get_env("SURREAL_PASS");
+    let addr = get_env("ADDR");
+
+    let db = Surreal::new::<Wss>(surreal_uri).await?;
+
+    db.signin(Database {
+        namespace: "main".into(),
+        database: "main".into(),
+        username: surreal_user,
+        password: surreal_pass,
+    }).await?;
+
+    db.use_ns("main").use_db("main").await?;
+
+    info!("Connected to SurrealDB successfully");
+
+    let app = server::router(AppState {
+        db,
+    });
+
+    let listener = tokio::net::TcpListener::bind(&addr).await?;
+    info!("Listening on {addr}");
+    axum::serve(listener, app).await?;
+
+    Ok(())
+}
