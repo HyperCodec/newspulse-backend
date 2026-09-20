@@ -21,6 +21,8 @@ use axum_openapi3::{
 use icalendar::{Calendar, Component, Event, EventLike};
 use serde::{Deserialize, Serialize};
 use tracing::{debug, error};
+use tower_http::cors::{CorsLayer, Any};
+use tower::ServiceBuilder;
 
 use crate::AppState;
 use crate::db::*;
@@ -47,6 +49,8 @@ where
 }
 
 pub fn router(state: AppState) -> Router {
+    let cors = CorsLayer::new().allow_origin(Any);
+
     Router::new()
         .add(themes())
         .add(events())
@@ -56,6 +60,7 @@ pub fn router(state: AppState) -> Router {
         .add(event_extras())
         .add(bucket_extras())
         .add(openapi())
+        .layer(ServiceBuilder::new().layer(cors))
         .with_state(state)
 }
 
