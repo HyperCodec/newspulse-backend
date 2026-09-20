@@ -1,9 +1,13 @@
-use surrealdb::{Surreal, engine::remote::ws::{Client, Wss}, opt::auth::{Database, Root}};
+use surrealdb::{
+    Surreal,
+    engine::remote::ws::{Client, Wss},
+    opt::auth::{Database, Root},
+};
 use tracing::info;
 use tracing_subscriber::EnvFilter;
 
-mod server;
 mod db;
+mod server;
 
 #[derive(Clone)]
 struct AppState {
@@ -20,8 +24,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     tracing_subscriber::fmt()
         .with_env_filter(
-            EnvFilter::try_from_default_env()
-                .unwrap_or_else(|_| EnvFilter::from("INFO"))
+            EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::from("INFO")),
         )
         .init();
 
@@ -37,15 +40,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         database: "main".into(),
         username: surreal_user,
         password: surreal_pass,
-    }).await?;
+    })
+    .await?;
 
     db.use_ns("main").use_db("main").await?;
 
     info!("Connected to SurrealDB successfully");
 
-    let app = server::router(AppState {
-        db,
-    });
+    let app = server::router(AppState { db });
 
     let listener = tokio::net::TcpListener::bind(&addr).await?;
     info!("Listening on {addr}");

@@ -8,10 +8,10 @@ use axum::response::{IntoResponse, Response};
 use axum::{Json, Router};
 use axum_extra::extract::Query;
 use axum_openapi3::utoipa::openapi::{InfoBuilder, OpenApiBuilder};
+use axum_openapi3::utoipa::*;
+use axum_openapi3::{AddRoute, build_openapi, endpoint, utoipa};
 use icalendar::{Calendar, Component, Event, EventLike};
 use serde::{Deserialize, Serialize};
-use axum_openapi3::{AddRoute, build_openapi, endpoint, utoipa};
-use axum_openapi3::utoipa::*;
 use tracing::{debug, error};
 
 use crate::AppState;
@@ -52,9 +52,7 @@ pub fn router(state: AppState) -> Router {
 }
 
 #[endpoint(method = "GET", path = "/openapi.json", description = "OpenAPI spec")]
-async fn openapi(
-    State(_): State<AppState>,
-) -> impl IntoResponse {
+async fn openapi(State(_): State<AppState>) -> impl IntoResponse {
     let openapi = build_openapi(|| {
         OpenApiBuilder::new().info(InfoBuilder::new().title("Fuego").version("0.1.0"))
     });
@@ -104,22 +102,29 @@ struct Records {
     ids: Vec<String>,
 }
 
-#[endpoint(method = "GET", path = "/themes", description = "A list of themes and their article counts")]
-async fn themes(
-    State(state): State<AppState>,
-) -> Result<Json<Vec<Theme>>, InternalServerError> {
+#[endpoint(
+    method = "GET",
+    path = "/themes",
+    description = "A list of themes and their article counts"
+)]
+async fn themes(State(state): State<AppState>) -> Result<Json<Vec<Theme>>, InternalServerError> {
     // select the whole theme table since it is small enough.
     let themes: Vec<Theme> = state.db.select("theme").await?;
     Ok(Json(themes))
 }
 
-#[endpoint(method = "GET", path = "/event", description = "Fetch many events from their ids")]
+#[endpoint(
+    method = "GET",
+    path = "/event",
+    description = "Fetch many events from their ids"
+)]
 async fn events(
     Query(ids): Query<Records>,
     State(state): State<AppState>,
 ) -> Result<Json<Vec<CalendarEventFull>>, InternalServerError> {
     // TODO bad request for invalid ids
-    let mut db_res = state.db
+    let mut db_res = state
+        .db
         .query("fn::get_events_from_partial_ids($ids)")
         .bind(("ids", ids.ids))
         .await?;
@@ -128,12 +133,17 @@ async fn events(
     Ok(Json(events))
 }
 
-#[endpoint(method = "GET", path = "/digest", description = "The current daily digest")]
+#[endpoint(
+    method = "GET",
+    path = "/digest",
+    description = "The current daily digest"
+)]
 async fn daily_digest(
     Query(params): Query<DigestParams>,
     State(state): State<AppState>,
 ) -> Result<Json<Vec<BucketWithSources>>, InternalServerError> {
-    let mut db_res = state.db
+    let mut db_res = state
+        .db
         .query("fn::get_daily_digest($themes, time::now(), $limit, $threshold)")
         .bind(("themes", params.themes))
         .bind(("limit", params.limit))
@@ -146,7 +156,11 @@ async fn daily_digest(
 
 const MAX_DIGEST_DAYS: u32 = 31;
 
-#[endpoint(method = "GET", path = "/daily_digests.ics", description = "iCalendar stream of daily digests")]
+#[endpoint(
+    method = "GET",
+    path = "/daily_digests.ics",
+    description = "iCalendar stream of daily digests"
+)]
 async fn ical_digests(
     Query(params): Query<ICalDigestParams>,
     State(state): State<AppState>,
@@ -155,13 +169,12 @@ async fn ical_digests(
 
     // one digest per day, stepping backwards from now
     let sql = (0..days)
-        .map(|i| format!(
-            "fn::get_daily_digest($themes, time::now() - {i}d, $limit, $threshold);"
-        ))
+        .map(|i| format!("fn::get_daily_digest($themes, time::now() - {i}d, $limit, $threshold);"))
         .collect::<Vec<_>>()
         .join("\n");
 
-    let mut db_res = state.db
+    let mut db_res = state
+        .db
         .query(sql)
         .bind(("themes", params.themes))
         .bind(("limit", params.limit))
@@ -191,7 +204,8 @@ async fn ical_digests(
     let events: Vec<CalendarEventFull> = if source_ids.is_empty() {
         Vec::new()
     } else {
-        let mut res = state.db
+        let mut res = state
+            .db
             .query("fn::get_events_from_partial_ids($ids)")
             .bind(("ids", source_ids))
             .await?;
@@ -232,14 +246,19 @@ async fn ical_digests(
         .body(Body::from(calendar.to_string()))?)
 }
 
-#[endpoint(method = "GET", path = "/events.ics", description = "iCalendar stream of individual events")]
+#[endpoint(
+    method = "GET",
+    path = "/events.ics",
+    description = "iCalendar stream of individual events"
+)]
 async fn ical_events(
     Query(params): Query<ICalParams>,
     State(state): State<AppState>,
 ) -> Result<Response, InternalServerError> {
     debug!("themes = {:?}", params.themes);
 
-    let mut db_res = state.db
+    let mut db_res = state
+        .db
         .query("fn::get_events_with_any_theme($themes, $threshold)")
         .bind(("themes", params.themes))
         .bind(("threshold", params.threshold))
@@ -259,7 +278,7 @@ async fn ical_events(
                 .description(&event.summary)
                 .url(&event.article_url)
                 .uid(&event.id)
-                .starts(event.timestamp.deref().to_owned())
+                .starts(event.timestamp.deref().to_owned()),
         );
     }
 
@@ -267,16 +286,20 @@ async fn ical_events(
 
     Ok(Response::builder()
         .header("Content-Type", "text/calendar")
-        .body(Body::from(ical))?
-    )
+        .body(Body::from(ical))?)
 }
 
-#[endpoint(method = "GET", path = "/event/extra", description = "Extra data (source, semantic text, embedding, metadata) for many events from their ids")]
+#[endpoint(
+    method = "GET",
+    path = "/event/extra",
+    description = "Extra data (source, semantic text, embedding, metadata) for many events from their ids"
+)]
 async fn event_extras(
     Query(ids): Query<Records>,
     State(state): State<AppState>,
 ) -> Result<Json<Vec<ExtraData>>, InternalServerError> {
-    let mut db_res = state.db
+    let mut db_res = state
+        .db
         .query("fn::get_event_extras($ids)")
         .bind(("ids", ids.ids))
         .await?;
@@ -285,12 +308,17 @@ async fn event_extras(
     Ok(Json(extras))
 }
 
-#[endpoint(method = "GET", path = "/bucket/extra", description = "Extra data (activity, direction, description) for many digest buckets from their ids")]
+#[endpoint(
+    method = "GET",
+    path = "/bucket/extra",
+    description = "Extra data (activity, direction, description) for many digest buckets from their ids"
+)]
 async fn bucket_extras(
     Query(ids): Query<Records>,
     State(state): State<AppState>,
 ) -> Result<Json<Vec<ExtraData>>, InternalServerError> {
-    let mut db_res = state.db
+    let mut db_res = state
+        .db
         .query("fn::get_bucket_extras($ids)")
         .bind(("ids", ids.ids))
         .await?;
