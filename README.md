@@ -86,11 +86,11 @@ surreal import \
 
 ```
 
-### Option B: Via Surrealist / SurrealDB Studio
+### Option B: Via SurrealDB Studio
 
-1. Open **Surrealist** (or your SurrealDB Studio web dashboard).
+1. Open [SurrealDB Studio](https://studio.surrealdb.com).
 2. Connect to your namespace (`main`) and database (`main`).
-3. Open a new Query tab, paste the contents of `schema.surql`, and click **Run**.
+3. Open settings->data->import and upload the `schema.surql` file.
 
 ---
 
