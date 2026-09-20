@@ -18,7 +18,8 @@ WORKDIR /app
 
 COPY --from=builder /app/target/release/steelhacks-xiii /usr/local/bin/server
 
-ENV ADDR="0.0.0.0:3000"
+ENV ADDR="0.0.0.0"
+ENV PORT="3000"
 # SURREAL_URI, SURREAL_USER, SURREAL_PASS should be provided at runtime
 
 EXPOSE 3000

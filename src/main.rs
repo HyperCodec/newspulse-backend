@@ -32,6 +32,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let surreal_user = get_env("SURREAL_USER");
     let surreal_pass = get_env("SURREAL_PASS");
     let addr = get_env("ADDR");
+    let port = get_env("PORT");
 
     let db = Surreal::new::<Wss>(surreal_uri).await?;
 
@@ -49,7 +50,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let app = server::router(AppState { db });
 
-    let listener = tokio::net::TcpListener::bind(&addr).await?;
+    let listener = tokio::net::TcpListener::bind(format!("{addr}:{port}")).await?;
     info!("Listening on {addr}");
     axum::serve(listener, app).await?;
 
