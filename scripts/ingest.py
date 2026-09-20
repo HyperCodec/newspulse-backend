@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
-"""Load fuego-response.v1 JSON files into SurrealDB (namespace "main", database "main").
+"""NewsPulse Data Ingestion Tool
 
-    pip install "surrealdb>=2" python-dotenv
-    python ingest.py fuego_output.json [more.json ...]
-    python ingest.py --dry-run fuego_output.json
+Loads structured news payload JSON files into SurrealDB (namespace "main", database "main").
 
-Reads SURREAL_URI, SURREAL_USER and SURREAL_PASS from the environment / .env.
-Tested with surrealdb (Python SDK) 2.0.0 against SurrealDB 3.2.4.
+Usage:
+    uv run python scripts/ingest.py data/news_output.json [more.json ...]
+    uv run python scripts/ingest.py --dry-run data/news_output.json
+
+Reads SURREAL_URI, SURREAL_USER, and SURREAL_PASS from environment / .env.
 
 Mapping
 -------
@@ -15,12 +16,13 @@ article  -> calendar_event:<article id>
     buckets[] -> themes (set) + similarities ({theme: score}),
     source / semantic_text / embedding / metadata -> extra (one object column)
 bucket   -> summary_bucket:<bucket id>_<UTC date of generated_at>
-    one bucket per theme per day, so re-running on the same day updates it in place.
-    window = the 24h ending at generated_at.
-    everything else (description, activity, direction, ...) -> extra
+    one bucket per theme per day; re-running on the same day updates in place.
+    window = 24h ending at generated_at.
+    description, activity, direction, etc. -> extra
 
-The script is idempotent: ids are deterministic and writes are UPSERTs.
+This script is idempotent: IDs are deterministic and database writes are UPSERTs.
 """
+
 import argparse
 import json
 import os
@@ -33,10 +35,9 @@ from surrealdb.errors import SurrealError
 
 NS = DB = "main"
 DIGEST_WINDOW = timedelta(hours=24)  # bucket window = [generated_at - 24h, generated_at]
-EXPECTED_SCHEMA = "fuego-response.v1"
+EXPECTED_SCHEMA = "newspulse-response.v1"
 
 # Timestamps travel as strings and are cast here; themes travel as a list and are cast to a set.
-# Each of these is a single statement, so each batch is atomic.
 EVENT_SQL = """
 FOR $r IN $rows {
     UPSERT type::record('calendar_event', $r.id) CONTENT {
@@ -75,16 +76,15 @@ def iso(dt: datetime) -> str:
 
 
 def normalize_uri(uri: str) -> str:
-    """The SDK needs a scheme and adds /rpc itself."""
+    """Ensure websocket protocol scheme for SurrealDB connection."""
     uri = uri.strip().rstrip("/")
     if uri.endswith("/rpc"):
-        uri = uri[: -len("/rpc")]
+        uri = uri[:-4]
     if uri.startswith("https://"):
         return "wss://" + uri[len("https://") :]
     if uri.startswith("http://"):
         return "ws://" + uri[len("http://") :]
     if "://" not in uri:
-        # Match Rust's <Wss> client by defaulting to secure WebSocket
         if uri.startswith("localhost") or uri.startswith("127.0.0.1"):
             return "ws://" + uri
         return "wss://" + uri
@@ -108,7 +108,7 @@ def transform(doc: dict, theme_key: str):
     generated_at = parse_ts(doc["generated_at"])
     day = generated_at.date().isoformat()
 
-    # Lowercase theme strings to satisfy SurrealDB schema/event constraints
+    # Lowercase theme strings to satisfy SurrealDB schema constraints ($value == string::lowercase($value))
     theme_of_bucket = {
         b["id"]: (b["name"] if theme_key == "name" else b["id"]).lower()
         for b in doc.get("buckets", [])
@@ -167,27 +167,33 @@ def transform(doc: dict, theme_key: str):
 # ── database ───────────────────────────────────────────────────────────────
 
 def sign_in(db, user: str, password: str) -> None:
-    try:  # a database-level user (like the app's `server` user)
+    try:  # database-level user
         db.signin({"namespace": NS, "database": DB, "username": user, "password": password})
-    except SurrealError:  # otherwise a root user
+    except SurrealError:  # root-level user
         db.signin({"username": user, "password": password})
     db.use(NS, DB)
 
 
 def write(db, sql: str, rows: list) -> None:
-    # The SDK raises (e.g. InternalError) if any statement fails, such as a schema violation.
     db.query(sql, {"rows": rows})
 
 
 # ── main ───────────────────────────────────────────────────────────────────
 
 def main() -> int:
-    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("files", nargs="+", help="fuego-response.v1 JSON files")
-    ap.add_argument("--batch-size", type=int, default=50, help="records per query (default 50)")
-    ap.add_argument("--theme-key", choices=("name", "id"), default="name",
-                    help="use bucket name ('Sports') or id ('bucket-sports') as the theme string (default: name)")
-    ap.add_argument("--dry-run", action="store_true", help="transform and report, but don't write")
+    ap = argparse.ArgumentParser(
+        description="NewsPulse JSON Ingestion Script",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    ap.add_argument("files", nargs="+", help="JSON data files to ingest")
+    ap.add_argument("--batch-size", type=int, default=50, help="records per query (default: 50)")
+    ap.add_argument(
+        "--theme-key",
+        choices=("name", "id"),
+        default="name",
+        help="use bucket name ('sports') or id ('bucket-sports') as the theme string (default: name)",
+    )
+    ap.add_argument("--dry-run", action="store_true", help="transform and report without writing to SurrealDB")
     args = ap.parse_args()
 
     loaded = []
@@ -215,7 +221,7 @@ def main() -> int:
                 write(db, EVENT_SQL, batch)
             for batch in chunks(buckets, args.batch_size):
                 write(db, BUCKET_SQL, batch)
-            print(f"{path}: written")
+            print(f"{path}: written successfully")
 
     return 0
 

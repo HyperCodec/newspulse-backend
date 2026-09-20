@@ -16,7 +16,7 @@ RUN apt-get update && apt-get install -y ca-certificates && rm -rf /var/lib/apt/
 
 WORKDIR /app
 
-COPY --from=builder /app/target/release/steelhacks-xiii /usr/local/bin/server
+COPY --from=builder /app/target/release/newspulse-backend /usr/local/bin/server
 
 ENV ADDR="0.0.0.0"
 ENV PORT="3000"

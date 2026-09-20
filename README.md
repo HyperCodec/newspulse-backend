@@ -1,25 +1,25 @@
-# Fuego
+# NewsPulse
 
-A high-performance news digest and event tracking API built with **Rust (Axum)**, **SurrealDB**, and **Python (`uv`)**. Fuego ingests structured semantic news data (`fuego-response.v1`), stores events and digest buckets in SurrealDB, and exposes REST and iCalendar (`.ics`) subscription endpoints.
+A high-performance news digest and event tracking API built with **Rust (Axum)**, **SurrealDB**, and **Python (`uv`)**. NewsPulse ingests structured semantic news data (`newspulse-response.v1`), stores events and digest buckets in SurrealDB, and exposes REST and iCalendar (`.ics`) subscription endpoints.
 
 ---
 
 ## Features
 
-* **Automated Data Ingestion:** Pure Python script managed via `uv` to parse, transform, and `UPSERT` news events and daily summary buckets into SurrealDB.
-* **REST API:** Lightweight, asynchronous endpoints serving daily digests, themes, individual events, and detailed extra metadata (embeddings, semantic text, and direction data).
-* **iCalendar Feeds:** Dynamic `.ics` stream endpoints (`/daily_digests.ics` and `/events.ics`) for direct integration into Apple Calendar, Google Calendar, or Outlook.
-* **OpenAPI Specification:** Native OpenAPI spec available at `/openapi.json`.
-* **Production-Ready Docker Container:** Optimized multi-stage build running on `debian:bookworm-slim` with TLS/WSS CA certificate support and dynamic `PORT` binding for cloud platforms like Vercel and Fly.io.
+- **Automated Data Ingestion:** Pure Python script managed via `uv` to parse, transform, and `UPSERT` news events and daily summary buckets into SurrealDB.
+- **REST API:** Lightweight, asynchronous endpoints serving daily digests, themes, individual events, and detailed extra metadata (embeddings, semantic text, and direction data).
+- **iCalendar Feeds:** Dynamic `.ics` stream endpoints (`/daily_digests.ics` and `/events.ics`) for direct integration into Apple Calendar, Google Calendar, or Outlook.
+- **OpenAPI Specification:** Native OpenAPI spec available at `/openapi.json`.
+- **Production-Ready Docker Container:** Optimized multi-stage build running on `debian:bookworm-slim` with TLS/WSS CA certificate support and dynamic `PORT` binding for cloud platforms like Vercel and Fly.io.
 
 ---
 
 ## Tech Stack
 
-* **Backend:** Rust, Axum, Tokio, Utoipa, `icalendar`
-* **Database:** SurrealDB (Namespace: `main`, Database: `main`)
-* **Python / Scripting:** Python 3.10+, `uv`, `surrealdb` SDK, `python-dotenv`
-* **Task Runner:** `just`
+- **Backend:** Rust, Axum, Tokio, Utoipa, `icalendar`
+- **Database:** SurrealDB (Namespace: `main`, Database: `main`)
+- **Python / Scripting:** Python 3.10+, `uv`, `surrealdb` SDK, `python-dotenv`
+- **Task Runner:** `just`
 
 ---
 
@@ -45,7 +45,7 @@ A high-performance news digest and event tracking API built with **Rust (Axum)**
 ## Prerequisites
 
 * **Rust:** 1.75+ toolchain
-* **uv:** Fast Python package installer (`curl -LsSf [https://astral.sh/uv/install.sh](https://astral.sh/uv/install.sh) | sh`)
+* **uv:** Fast Python package installer (`curl -LsSf https://astral.sh/uv/install.sh | sh`)
 * **Just:** Command runner (`cargo install just` or `brew install just`)
 * **SurrealDB:** Running instance (local or hosted)
 
@@ -77,7 +77,7 @@ Before running the server or ingesting data, ensure your SurrealDB instance is i
 
 ```bash
 surreal import \
-  --conn http://127.0.0.1:8000 \
+  --conn [http://127.0.0.1:8000](http://127.0.0.1:8000) \
   --user root \
   --pass root \
   --ns main \
@@ -96,7 +96,7 @@ surreal import \
 
 ## Data Ingestion
 
-The python ingestion tool parses `fuego-response.v1` JSON files, normalizes themes to lowercase (satisfying SurrealDB schema assertions), and upserts them atomically into `calendar_event` and `summary_bucket` tables.
+The python ingestion tool parses `newspulse-response.v1` JSON files, normalizes themes to lowercase (satisfying SurrealDB schema assertions), and upserts them atomically into `calendar_event` and `summary_bucket` tables.
 
 ### 1. Initialize Python Environment
 
@@ -113,7 +113,7 @@ just setup
 just ingest-dry data/sample.json
 
 # Ingest specific JSON file(s)
-just ingest data/fuego_output.json
+just ingest data/news_output.json
 
 # Ingest all JSON files in the data/ directory
 just ingest-data
@@ -141,7 +141,7 @@ just ingest-data
 ### 1. General & System
 
 * **`GET /openapi.json`**
-Returns the auto-generated OpenAPI 3.0 specification.
+Returns the auto-generated OpenAPI 3.0 specification (titled `NewsPulse`).
 * **`GET /themes`**
 Returns all registered themes along with their article counts.
 
@@ -226,7 +226,7 @@ iCalendar feed of individual articles/events.
 
 ```bash
 # Build image
-docker build -t fuego-server .
+docker build -t newspulse-server .
 
 # Run container
 docker run -d \
@@ -234,8 +234,8 @@ docker run -d \
   -e SURREAL_URI="wss://your-surrealdb-host.com" \
   -e SURREAL_USER="root" \
   -e SURREAL_PASS="secret" \
-  --name fuego-server \
-  fuego-server
+  --name newspulse-server \
+  newspulse-server
 
 ```
 

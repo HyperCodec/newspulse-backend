@@ -62,7 +62,7 @@ pub fn router(state: AppState) -> Router {
 #[endpoint(method = "GET", path = "/openapi.json", description = "OpenAPI spec")]
 async fn openapi(State(_): State<AppState>) -> impl IntoResponse {
     let openapi = build_openapi(|| {
-        OpenApiBuilder::new().info(InfoBuilder::new().title("Fuego").version("0.1.0"))
+        OpenApiBuilder::new().info(InfoBuilder::new().title("NewsPulse").version("0.1.0"))
     });
 
     Json(openapi)
