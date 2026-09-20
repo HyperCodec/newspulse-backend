@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use surrealdb::{
     Surreal,
     engine::remote::ws::{Client, Wss},
@@ -11,7 +13,7 @@ mod server;
 
 #[derive(Clone)]
 struct AppState {
-    db: Surreal<Client>,
+    db: Arc<Surreal<Client>>,
 }
 
 fn get_env(name: &str) -> String {
@@ -48,7 +50,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     info!("Connected to SurrealDB successfully");
 
-    let app = server::router(AppState { db });
+    let app = server::router(AppState { db: Arc::new(db) });
 
     let listener = tokio::net::TcpListener::bind(format!("{addr}:{port}")).await?;
     info!("Listening on {addr}");
