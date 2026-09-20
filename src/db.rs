@@ -39,3 +39,9 @@ pub struct BucketWithSources {
     /// event keys, ordered by similarity to `theme` (highest first)
     pub sources: Vec<String>,
 }
+
+#[derive(SurrealValue, Serialize, Deserialize, Debug)]
+pub struct ExtraData {
+    pub id: String,
+    pub extra: serde_json::Value,
+}

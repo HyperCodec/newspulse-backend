@@ -15,7 +15,7 @@ use axum_openapi3::utoipa::*;
 use tracing::{debug, error};
 
 use crate::AppState;
-use crate::db::{BucketWithSources, CalendarEventFull, Theme};
+use crate::db::*;
 
 pub struct InternalServerError;
 
@@ -45,6 +45,8 @@ pub fn router(state: AppState) -> Router {
         .add(daily_digest())
         .add(ical_digests())
         .add(ical_events())
+        .add(event_extras())
+        .add(bucket_extras())
         .add(openapi())
         .with_state(state)
 }
@@ -267,4 +269,32 @@ async fn ical_events(
         .header("Content-Type", "text/calendar")
         .body(Body::from(ical))?
     )
+}
+
+#[endpoint(method = "GET", path = "/event/extra", description = "Extra data (source, semantic text, embedding, metadata) for many events from their ids")]
+async fn event_extras(
+    Query(ids): Query<Records>,
+    State(state): State<AppState>,
+) -> Result<Json<Vec<ExtraData>>, InternalServerError> {
+    let mut db_res = state.db
+        .query("fn::get_event_extras($ids)")
+        .bind(("ids", ids.ids))
+        .await?;
+
+    let extras: Vec<ExtraData> = db_res.take(0)?;
+    Ok(Json(extras))
+}
+
+#[endpoint(method = "GET", path = "/bucket/extra", description = "Extra data (activity, direction, description) for many digest buckets from their ids")]
+async fn bucket_extras(
+    Query(ids): Query<Records>,
+    State(state): State<AppState>,
+) -> Result<Json<Vec<ExtraData>>, InternalServerError> {
+    let mut db_res = state.db
+        .query("fn::get_bucket_extras($ids)")
+        .bind(("ids", ids.ids))
+        .await?;
+
+    let extras: Vec<ExtraData> = db_res.take(0)?;
+    Ok(Json(extras))
 }

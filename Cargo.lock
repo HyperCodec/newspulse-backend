@@ -3646,6 +3646,7 @@ dependencies = [
  "dotenvy",
  "icalendar",
  "serde",
+ "serde_json",
  "surrealdb",
  "tokio",
  "tracing",
