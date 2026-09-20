@@ -9,10 +9,10 @@ COPY src ./src
 
 RUN cargo build --release
 
-FROM debian:bookworm-slim AS runner
+FROM debian:bookworm AS runner
 
 # Install CA certificates for TLS/wss connection support to SurrealDB
-RUN apt-get update && apt-get install -y ca-certificates && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y ca-certificates
 
 WORKDIR /app
 
