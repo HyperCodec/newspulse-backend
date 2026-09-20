@@ -7,6 +7,7 @@ default:
 # Sync Python dependencies with uv
 setup:
     uv sync
+    cargo fetch
 
 # Run data ingestion on one or more JSON files (e.g., `just ingest data/sample.json`)
 ingest +FILES:

@@ -2,10 +2,19 @@ FROM rust:1-slim-bookworm AS builder
 
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y pkg-config libssl-dev && rm -rf /var/lib/apt/lists/*
+# Install build dependencies, clang, and mold linker
+RUN apt-get update && apt-get install -y \
+    pkg-config \
+    libssl-dev \
+    clang \
+    mold \
+    && rm -rf /var/lib/apt/lists/*
 
 COPY Cargo.toml Cargo.lock ./
 COPY src ./src
+
+# Instruct Rust/GCC to use mold as the linker
+ENV RUSTFLAGS="-C link-arg=-fuse-ld=mold"
 
 RUN cargo build --release
 
@@ -20,7 +29,6 @@ COPY --from=builder /app/target/release/newspulse-backend /usr/local/bin/server
 
 ENV ADDR="0.0.0.0"
 ENV PORT="3000"
-# SURREAL_URI, SURREAL_USER, SURREAL_PASS should be provided at runtime
 
 EXPOSE 3000
 
