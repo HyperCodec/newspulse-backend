@@ -155,24 +155,16 @@ Fetch one or more calendar events by their IDs.
 * `id`: Event ID (e.g., `?id=20260919211500-382&id=20260919210000-499`)
 
 
-
-
 * **`GET /event/extra`**
 Fetch full extra metadata for events (embeddings, semantic text, GDELT metadata).
 * **Query Params:**
 * `id`: Event ID (repeatable)
 
 
-
-
 * **`GET /bucket/extra`**
 Fetch full extra metadata for digest summary buckets (activity, direction, source bucket details).
 * **Query Params:**
 * `id`: Bucket ID (repeatable, e.g. `?id=bucket-sports_2026-09-19`)
-
-
-
-
 
 ---
 
@@ -184,10 +176,6 @@ Fetch the active daily news digest in JSON format.
 * `theme`: (Optional) Filter by theme name (repeatable, e.g. `?theme=sports&theme=health`)
 * `limit`: (Optional) Max source articles per bucket
 * `threshold`: (Optional) Minimum similarity score (default `0.0`)
-
-
-
-
 
 ---
 
@@ -203,7 +191,6 @@ iCalendar feed of daily digest summaries.
 * `limit`: Max sources per digest entry
 * `threshold`: Minimum similarity score
 * `days`: Number of historical days to include (default: `7`, max: `31`)
-
 
 
 
@@ -241,4 +228,4 @@ docker run -d \
 
 ### Deploying to Cloud / Vercel / PaaS
 
-The Rust server checks for the platform-injected `PORT` environment variable before falling back to `ADDR` or `0.0.0.0:3000`. This allows seamless deployment on PaaS platforms (Vercel, Render, Fly.io, Railway) that assign ports dynamically at runtime.
+The Rust server checks for the platform-injected `PORT` environment variable before falling back to `3000`.

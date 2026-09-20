@@ -9,7 +9,6 @@ pub struct CalendarEventFull {
     pub name: String,
     pub summary: String,
     pub themes: HashSet<String>,
-    /// similarity score per theme, keyed by theme name
     pub similarities: HashMap<String, f64>,
     pub article_url: String,
     pub timestamp: Datetime,
@@ -28,7 +27,6 @@ pub struct BucketWithSources {
     pub theme: String,
     pub begin_timestamp: Datetime,
     pub end_timestamp: Datetime,
-    /// event keys, ordered by similarity to `theme` (highest first)
     pub sources: Vec<String>,
 }
 
