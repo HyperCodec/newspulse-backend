@@ -1,4 +1,4 @@
-FROM rust:1-slim AS builder
+FROM rust:1-slim-bookworm AS builder
 
 WORKDIR /app
 
@@ -9,10 +9,10 @@ COPY src ./src
 
 RUN cargo build --release
 
-FROM debian:bookworm AS runner
+FROM debian:bookworm-slim AS runner
 
 # Install CA certificates for TLS/wss connection support to SurrealDB
-RUN apt-get update && apt-get install -y ca-certificates
+RUN apt-get update && apt-get install -y ca-certificates && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
