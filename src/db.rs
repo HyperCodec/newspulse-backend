@@ -1,7 +1,7 @@
 use std::collections::{HashMap, HashSet};
 
 use serde::{Deserialize, Serialize};
-use surrealdb::types::{Datetime, SurrealValue, Uuid};
+use surrealdb::types::{Datetime, SurrealValue};
 
 #[derive(SurrealValue, Serialize, Deserialize, Debug)]
 pub struct CalendarEventFull {
@@ -13,14 +13,6 @@ pub struct CalendarEventFull {
     pub similarities: HashMap<String, f64>,
     pub article_url: String,
     pub timestamp: Datetime,
-}
-
-#[derive(SurrealValue, Serialize, Deserialize, Debug)]
-pub struct SummaryBucketFull {
-    pub id: Uuid,
-    pub summary: String,
-    pub begin_timestamp: Datetime,
-    pub end_timestamp: Datetime,
 }
 
 #[derive(SurrealValue, Serialize, Deserialize, Debug)]

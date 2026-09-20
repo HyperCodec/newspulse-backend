@@ -1,7 +1,7 @@
 use surrealdb::{
     Surreal,
     engine::remote::ws::{Client, Wss},
-    opt::auth::{Database, Root},
+    opt::auth::Database,
 };
 use tracing::info;
 use tracing_subscriber::EnvFilter;
@@ -15,7 +15,7 @@ struct AppState {
 }
 
 fn get_env(name: &str) -> String {
-    std::env::var(name).expect(&format!("Missing environment variable: {name}"))
+    std::env::var(name).unwrap_or_else(|_| panic!("Missing environment variable: {name}"))
 }
 
 #[tokio::main]

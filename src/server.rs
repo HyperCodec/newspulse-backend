@@ -1,15 +1,23 @@
 use std::collections::{HashMap, HashSet};
 use std::ops::Deref;
 
-use axum::body::Body;
-use axum::extract::State;
-use axum::http::StatusCode;
-use axum::response::{IntoResponse, Response};
-use axum::{Json, Router};
+use axum::{
+    body::Body,
+    extract::State,
+    http::StatusCode,
+    response::{IntoResponse, Response},
+    Json, Router,
+};
 use axum_extra::extract::Query;
-use axum_openapi3::utoipa::openapi::{InfoBuilder, OpenApiBuilder};
-use axum_openapi3::utoipa::*;
-use axum_openapi3::{AddRoute, build_openapi, endpoint, utoipa};
+use axum_openapi3::{
+    build_openapi, endpoint,
+    utoipa::{
+        self,
+        openapi::{InfoBuilder, OpenApiBuilder},
+        *,
+    },
+    AddRoute,
+};
 use icalendar::{Calendar, Component, Event, EventLike};
 use serde::{Deserialize, Serialize};
 use tracing::{debug, error};
